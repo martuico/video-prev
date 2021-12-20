@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whoop Video Checker</title>
+    <link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet" />
+
+
+  </head>
+
+  <body>
+    <div class="container mx-auto p-4">
+      <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300" for="user_avatar">Upload
+        file</label>
+      <input
+        class="block w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 cursor-pointer dark:text-gray-400 focus:outline-none focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
+        aria-describedby="user_avatar_help" id="csv" type="file">
+      <!--Container-->
+      <div class="container w-full md:w-4/5 xl:w-3/5  mx-auto px-2">
+
+        <p id="pageNumber" class="text-center"></p>
+        <!--Card-->
+        <ul id="list">
+
+        </ul>
+        <!--/Card-->
+        <div class="sm:grid grid-cols-4 gap-5 mx-auto px-16">
+          <div class="col-start-1 col-end-3 my-2">
+            <a href="#" onclick="App.prevPage()">
+              <div
+                class="h-full p-6 dark:bg-gray-800 bg-white hover:shadow-xl rounded border-b-4 border-red-500 shadow-md">
+                <h3 class="text-2xl mb-3 font-semibold inline-flex">
+                  <svg class="mr-2" width="24" height="30" viewBox="0 0 24 24" fill="none"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M1.02698 11.9929L5.26242 16.2426L6.67902 14.8308L4.85766 13.0033L22.9731 13.0012L22.9728 11.0012L4.85309 11.0033L6.6886 9.17398L5.27677 7.75739L1.02698 11.9929Z"
+                      fill="currentColor" /></svg>
+                  Prev
+                </h3>
+              </div>
+            </a>
+          </div>
+          <div class="col-end-5 col-span-2 my-2">
+            <a href="#" onclick="App.nextPage()">
+              <div
+                class="h-full p-6 dark:bg-gray-800 bg-white hover:shadow-xl rounded border-b-4 border-red-500 shadow-md text-right">
+                <h3 class="text-2xl mb-3 font-semibold inline-flex ">
+                  Next
+                  <svg class="ml-2" width="24" height="30" viewBox="0 0 24 24" fill="none"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M23.0677 11.9929L18.818 7.75739L17.4061 9.17398L19.2415 11.0032L0.932469 11.0012L0.932251 13.0012L19.2369 13.0032L17.4155 14.8308L18.8321 16.2426L23.0677 11.9929Z"
+                      fill="currentColor" /></svg>
+                </h3>
+              </div>
+            </a>
+          </div>
+        </div>
+
+      </div>
+      <!--/container-->
+    </div>
+    <script>
+      const App = {
+        search: "",
+        pageNumber: 0,
+        size: 10,
+        data: [],
+        total: 0,
+        renderedList: [],
+        init() {
+          document.getElementById('csv').onchange = this.onFileReadCSV
+        },
+        make() {
+          var self = App
+          self.renderedList = self.data.slice(self.startResults(), self.endResults())
+          self.renderToPage()
+          document.getElementById('pageNumber').textContent = self.pageNumber
+        },
+        onFileReadCSV(event) {
+          var self = App
+          var file = event.target.files[0]
+          // console.log(self)
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            const lines = evt.target.result.split('\n')
+            const result = []
+            const headers = lines[0].split(',')
+
+            for (let i = 1; i < lines.length; i++) {
+              if (!lines[i])
+                continue
+              const obj = {}
+              const currentline = lines[i].split(',')
+
+              for (let j = 0; j < headers.length; j++) {
+                obj[headers[j]] = currentline[j]
+              }
+              result.push(obj)
+            }
+            self.data = result
+            self.total = result.length
+            self.make()
+            return result
+          };
+          reader.readAsText(file);
+        },
+        pages() {
+          return Array.from({
+            length: Math.ceil(this.total / this.size),
+          })
+        },
+        nextPage() {
+          App.pageNumber++;
+          App.make()
+        },
+
+        //Previous Page
+        prevPage() {
+          App.pageNumber--;
+          App.make()
+        },
+
+        //Total number of pages
+        pageCount() {
+          return Math.ceil(this.total / this.size);
+        },
+
+        //Return the start range of the paginated results
+        startResults() {
+          return this.pageNumber * this.size + 1;
+        },
+
+        //Return the end range of the paginated results
+        endResults() {
+          let resultsOnPage = (this.pageNumber + 1) * this.size;
+
+          if (resultsOnPage <= this.total) {
+            return resultsOnPage;
+          }
+
+          return this.total;
+        },
+        renderToPage() {
+          App.renderedList.map((val, ind) => {
+            var ul = document.getElementById("list");
+            var li = document.createElement("li");
+            var vid = document.createElement("video")
+            var source = document.createElement("source")
+            source.setAttribute('src', val['video_url'])
+            source.setAttribute('type', 'video/mp4')
+            vid.appendChild(source);
+            vid.setAttribute('controls', '')
+            li.appendChild(vid);
+
+            var label = document.createElement('label')
+            label.classList.add('inline-flex')
+            label.classList.add('items-center')
+            label.classList.add('mt-3')
+
+            var checkbox = document.createElement('input')
+            checkbox.setAttribute('type', 'checkbox')
+            checkbox.setAttribute('id', val['hash'])
+            var title = document.createElement('span');
+            title.textContent = val['parameter'];
+
+            label.appendChild(checkbox)
+            label.appendChild(title)
+
+            li.appendChild(label)
+            li.classList.add('py-2')
+            ul.appendChild(li);
+          })
+
+        }
+      }
+
+      App.init()
+
+    </script>
+  </body>
+
+</html>
